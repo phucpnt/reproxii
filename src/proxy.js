@@ -12,7 +12,7 @@ const { TapeManager } = require("./tape-manager");
 const argv = require("minimist")(process.argv.slice(2), {
   default: {
     port: 8000,
-    snapshortDir: path.join(process.cwd(), "snapshot"),
+    snapshotDir: path.join(process.cwd(), "snapshot"),
     target: "https://jsonplaceholder.typicode.com",
     disableCORS: 0,
     disableRecord: 0,
@@ -23,15 +23,14 @@ const argv = require("minimist")(process.argv.slice(2), {
 function run({
   port,
   target,
-  snapshortDir,
+  snapshotDir,
   modifier = { request: {}, response: {} },
   disableCors,
   disableRecord,
   disableReplay
 }) {
   const url = URL.parse(target);
-  console.info(url);
-  const tapeManager = new TapeManager(snapshortDir, target);
+  const tapeManager = new TapeManager(path.resolve(snapshotDir), target);
   let record = null;
 
   const proxy = httpProxy.createProxyServer({
@@ -58,6 +57,7 @@ function run({
     debug('request path', proxyReq.path, proxyReq.method);
     debug('request headers', proxyReq.getHeaders());
 
+    proxyReq.removeHeader("if-none-match");
     record = tapeManager.getNewRecord();
     record.setPath(proxyReq.path);
     record.setMethod(proxyReq.method);
