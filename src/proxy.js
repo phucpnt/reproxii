@@ -30,11 +30,11 @@ function run({
   disableReplay
 }) {
   const url = URL.parse(target);
+  console.info(url);
   const tapeManager = new TapeManager(snapshortDir, target);
   let record = null;
 
   const proxy = httpProxy.createProxyServer({
-    agent: https.globalAgent,
     target: {
       ...url,
       pfx: fs.readFileSync(path.join(__dirname, "client.p12")),
