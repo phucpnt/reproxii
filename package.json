@@ -1,6 +1,6 @@
 {
   "name": "reproxii",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Little proxy record and replay",
   "main": "index.js",
   "bin": {
