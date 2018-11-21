@@ -1,0 +1,28 @@
+{
+  "name": "reproxii",
+  "version": "0.0.1",
+  "description": "Little proxy record and replay",
+  "main": "index.js",
+  "bin": {
+    "reproxii": "./src/proxy.js"
+  },
+  "scripts": {
+    "start": "DEBUG=reproxii nodemon --watch src ./src/proxy --port=8001"
+  },
+  "keywords": [
+    "proxy",
+    "record",
+    "replay"
+  ],
+  "author": "Phuc PNT <pn.truongphuc@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "debug": "^4.1.0",
+    "http-proxy": "^1.17.0",
+    "iltorb": "^2.4.1",
+    "minimist": "^1.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.6"
+  }
+}
