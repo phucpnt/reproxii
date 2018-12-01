@@ -19,7 +19,7 @@ class TapeManager {
         [
           record.path,
           record.method,
-          record.envelop.request.body.toString()
+          (record.envelop.request.body||"").toString()
         ].join("")
       )
       .digest("hex");
