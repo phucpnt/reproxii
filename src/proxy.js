@@ -44,10 +44,15 @@ function run({
   });
 
   proxy.on("error", (err, req, res) => {
-    debug('replay for request', record.path, record.method);
+    let log = debug.extend('replay');
     tapeManager.pickAndReplay(record).then((tape) => {
       res.writeHead(200, tape.envelop.response.headers)
       res.write(tape.envelop.response.body);
+      res.end();
+    }).catch(err => {
+      log('no tape found', tapeManager.getRecordId(record), record.path, record.method, record.envelop.request.body);
+      res.writeHead(500);
+      res.write('{"error": 1}');
       res.end();
     });
   });
@@ -69,6 +74,9 @@ function run({
       buffer = Buffer.concat([buffer, chunk]);
     });
     req.on("end", () => {
+      record.captureBody(buffer, "request");
+    });
+    req.on("error", () => {
       record.captureBody(buffer, "request");
     });
   });

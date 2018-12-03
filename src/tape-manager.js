@@ -2,6 +2,7 @@ const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs");
 const { Record } = require("./record");
+const debug = require('debug')('reproxii:tape');
 
 class TapeManager {
   constructor(snapshotFolder, host) {
@@ -39,6 +40,7 @@ class TapeManager {
         JSON.stringify(sRecord, null, 2),
         { encoding: "utf8" },
         err => {
+          if(err) debug('persis error', id, sRecord);
           resolve();
         }
       );
@@ -51,6 +53,7 @@ class TapeManager {
    */
   pickAndReplay(record) {
     const id = this.getRecordId(record);
+    debug('record id', id);
     return new Promise((resolve, reject) => {
       fs.readFile(
         path.join(this.snapshotFolder, `${id}.json`),
