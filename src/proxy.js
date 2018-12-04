@@ -31,7 +31,6 @@ function run({
 }) {
   const url = URL.parse(target);
   const tapeManager = new TapeManager(path.resolve(snapshotDir), target);
-  let record = null;
 
   const proxy = httpProxy.createProxyServer({
     target: {
@@ -43,19 +42,6 @@ function run({
     changeOrigin: true
   });
 
-  proxy.on("error", (err, req, res) => {
-    let log = debug.extend('replay');
-    tapeManager.pickAndReplay(record).then((tape) => {
-      res.writeHead(200, tape.envelop.response.headers)
-      res.write(tape.envelop.response.body);
-      res.end();
-    }).catch(err => {
-      log('no tape found', tapeManager.getRecordId(record), record.path, record.method, record.envelop.request.body);
-      res.writeHead(500);
-      res.write('{"error": 1}');
-      res.end();
-    });
-  });
 
   proxy.on("proxyReq", (proxyReq, req) => {
     // start record
@@ -63,7 +49,9 @@ function run({
     debug('request headers', proxyReq.getHeaders());
 
     proxyReq.removeHeader("if-none-match");
-    record = tapeManager.getNewRecord();
+    const record = tapeManager.getNewRecord();
+    req.reProxiiRecord = record;
+
     record.setPath(proxyReq.path);
     record.setMethod(proxyReq.method);
     record.captureHeader(proxyReq.getHeaders(), "request");
@@ -74,15 +62,19 @@ function run({
       buffer = Buffer.concat([buffer, chunk]);
     });
     req.on("end", () => {
+      debug("request capture end");
       record.captureBody(buffer, "request");
     });
     req.on("error", () => {
+      debug("request upstream error");
       record.captureBody(buffer, "request");
     });
   });
 
   proxy.on("proxyRes", function(proxyRes, req, res) {
     var body = new Buffer("", "binary");
+    let record = req.reProxiiRecord;
+
     proxyRes.on("data", function(data) {
       body = Buffer.concat([body, data]);
     });
@@ -97,6 +89,24 @@ function run({
       });
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.end(body, "binary");
+    });
+  });
+
+  proxy.on("error", (err, req, res) => {
+    debug("error", err);
+    let log = debug.extend('replay');
+    const record = req.reProxiiRecord;
+
+    log(tapeManager.getRecordId(record), record.envelop.request.body)
+    tapeManager.pickAndReplay(record).then((tape) => {
+      res.writeHead(200, tape.envelop.response.headers)
+      res.write(tape.envelop.response.body);
+      res.end();
+    }).catch(err => {
+      log('no tape found', tapeManager.getRecordId(record), record.path, record.method, record.envelop.request.body);
+      res.writeHead(500, {'Content-Type': 'application/json'});
+      res.write('{"error": 1}');
+      res.end();
     });
   });
 
